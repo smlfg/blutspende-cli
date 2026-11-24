@@ -8,10 +8,10 @@ Reservierungslink und Watch fuer neue Termine. Alle Aktionen sind lesend
 ## Meta
 
 ```ux-meta
-{"tool": "blutspende",
+ {"tool": "blutspende",
  "install": "pipx install git+https://github.com/smlfg/blutspende-cli",
  "base_url_env": "BLUTSPENDE_BASE_URL",
- "env": {}}
+ "env": {"BLUTSPENDE_HEUTE": "2026-11-24"}}
 ```
 
 ## Sitzungen
