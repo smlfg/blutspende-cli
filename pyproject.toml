@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "blutspende-cli"
+version = "0.1.0"
+description = "DRK-Blutspendetermine im Terminal finden"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+  { name = "smlfg", email = "186922365+smlfg@users.noreply.github.com" },
+]
+keywords = ["blutspende", "drk", "termine", "cli"]
+classifiers = [
+  "Environment :: Console",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+]
+dependencies = [
+  "httpx>=0.27",
+  "beautifulsoup4>=4.12",
+]
+
+[project.scripts]
+blutspende = "blutspende_cli.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/smlfg/blutspende-cli"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+blutspende_cli = ["py.typed"]
