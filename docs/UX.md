@@ -1,92 +1,138 @@
-# UX-Spec: kurstool
+# UX-Spec: blutspende
 
-Diese Datei ist die Vorlage für `docs/UX.md` in jedem neuen Repo. Sie wird vor der ersten Codezeile ausgefüllt. Alle Befehle sind so abtippbar, wie ein Mensch sie im Terminal eingibt. Beispielwerte (Tool `kurstool`, Kursnummern, Mails auf `.invalid`) werden durch die echten Werte des Projekts ersetzt.
-
-Ablauf beim Ausfüllen:
-
-1. Website live öffnen und die drei wichtigsten Aufgaben eines Menschen heraussuchen.
-2. Jede Aufgabe als Sitzung mitschreiben: Befehl, Eingabe, erwartete Ausgabe.
-3. Lesende Routen und alle Formularschritte der schreibenden Aktion ergänzen.
-4. Fixtures unter `tests/fixtures/ux/` ablegen.
-5. `python tests/harness/ux_check.py --spec-only` laufen lassen; erst bei grünem UX01 weiterbauen.
+`blutspende` findet DRK-Blutspendetermine im Terminal: per PLZ/Ort und Umkreis
+oder Landkreis, mit Zeitraumfilter, Detailansicht, Kalendereintrag (.ics),
+Reservierungslink und Watch fuer neue Termine. Alle Aktionen sind lesend
+(GET); es gibt keinen Login und keine schreibende Web-Aktion.
 
 ## Meta
 
-Das Meta-Objekt benennt den Befehlsnamen im PATH, den Installationsbefehl und alle Umgebungsvariablen. `base_url_env` ist Pflicht, sobald es Routen oder Formsteps gibt. `credential_env` führt dazu, dass das Tool einen `login`-Befehl haben muss.
-
 ```ux-meta
-{"tool": "kurstool",
- "install": "pipx install git+https://github.com/smlfg/kurstool-cli",
- "base_url_env": "KURSTOOL_BASE_URL",
- "env": {"KURSTOOL_STATUSGRUPPE": "studierende"},
- "credential_env": ["KURSTOOL_LOGIN_USER", "KURSTOOL_LOGIN_PASSWORD"]}
+{"tool": "blutspende",
+ "install": "pipx install git+https://github.com/smlfg/blutspende-cli",
+ "base_url_env": "BLUTSPENDE_BASE_URL",
+ "env": {}}
 ```
 
 ## Sitzungen
 
-Jede Sitzung ist eine Nutzer-Aufgabe. Es müssen mindestens drei sein, darunter Login, Suche per Name und eine schreibende Aktion. `$` ist ein Befehl, `>` eine Eingabe, `<` eine erwartete Ausgabe und `!` der erwartete Exit-Code. Der Installationsbefehl wird von der Harness durch eine lokale Installation in ein frisches venv ersetzt.
+### Installation und Termine suchen
 
-### Installation und Login
-
-Der Login fragt im Terminal interaktiv nach Benutzer und Passwort. Das Passwort wird nicht angezeigt und nicht gespeichert; die Sitzung landet im Schlüsselbund oder in einer Datei mit Rechten 0600. Die Zugangsdaten stammen aus einem Testkonto, nie aus echten Daten.
+Der erste Befehl nach der Installation sucht Termine um eine PLZ. Ohne
+weitere Optionen gilt ein Umkreis von 10 km. Die Ausgabe zeigt Datum,
+Uhrzeit, PLZ/Ort und Lokal, damit ein Mensch direkt sieht, ob der Termin
+passt.
 
 ```ux-session
-$ pipx install git+https://github.com/smlfg/kurstool-cli
-< kurstool
-$ kurstool login
-< Benutzer:
-> max.mustermann@example.invalid
-< Passwort:
-> geheim
-< Login erfolgreich
+$ pipx install git+https://github.com/smlfg/blutspende-cli
+$ blutspende suche 74072
+< 3 Termine im Umkreis von 10 km um 74072
+< 1) 02.12.2026, 14:00-19:00 Uhr: 74235 Erlenbach, Sulmtalhalle, Kultursaal
+< 2) 03.12.2026, 14:30-19:30 Uhr: 74388 Talheim, Schloßberghalle
+< 3) 23.12.2026, 14:00-19:00 Uhr: 74078 Heilbronn-Kirchhausen, Deutschordenhalle
 ! exit 0
 ```
 
-### Kurse nach Namen suchen
+### Nächsten Termin finden
 
-Der Suchbegriff ist positional. Die Ausgabe zeigt Namen und Kursnummer, damit ein Mensch ohne Nachschlagen weiterarbeiten kann.
+`naechster` beantwortet die Frage „wann kann ich in der Nähe Blut spenden?“
+mit genau einem Termin: dem frühesten Treffer.
 
 ```ux-session
-$ kurstool search volleyball
-< 1) Volleyball Anfänger (Kurs 32304)
-< 2) Volleyball Fortgeschritten (Kurs 32305)
+$ blutspende naechster Heilbronn
+< Nächster Termin:
+< 23.12.2026, 14:00-19:00 Uhr: 74078 Heilbronn-Kirchhausen, Deutschordenhalle
 ! exit 0
 ```
 
-### Kurs verbindlich buchen
+### Termin anzeigen
 
-Die schreibende Aktion zeigt zuerst Kurs, Ort und Preis. Danach fragt sie mit Default Nein. Erst nach `j` werden alle Formularschritte bis zur endgültigen Bestätigung gesendet. Bei `N` endet der Befehl ohne Request an einen Schritt ohne `before_confirm`.
+`zeige` nimmt einen Ortsnamen positional. Bei mehreren Treffern folgt eine
+nummerierte Auswahl im Terminal. Die Detailansicht nennt Datum, Lokal,
+Straße, Uhrzeit, die Reservierungspflicht und den Reservierungslink. Der
+Link wird nur angezeigt, nie automatisch geöffnet oder reserviert.
 
 ```ux-session
-$ kurstool book "Volleyball Anfänger"
-< Kurs: Volleyball Anfänger (32304)
-< Ort: Sporthalle Nord
-< Preis: 25,00 EUR
-< Buchung verbindlich? [j/N]
-> j
-< Buchung bestätigt
-< Bestätigungsnummer: KB-2026-0042
+$ blutspende zeige Erlenbach
+< Mehrere Termine gefunden:
+< 1) 25.11.2026, 15:30-19:45 Uhr: 61352 Bad Homburg / Ober-Erlenbach
+< 2) 02.12.2026, 14:00-19:00 Uhr: 74235 Erlenbach
+< 3) 28.12.2026, 16:30-20:00 Uhr: 97714 OERLENBACH
+< Welchen Termin anzeigen? [1-3]
+> 2
+< Blutspende in Erlenbach
+< 02.12.2026
+< Sulmtalhalle, Kultursaal
+< Talstraße 21
+< 14:00 - 19:00 Uhr
+< Nur mit Terminreservierung!
+< Termin reservieren: https://terminreservierung.blutspende.de/oeffentliche-spendeorte/7423511/termine?reservation_context=eyJkb25hdGlvbl90eXBlIjoiYmQiLCJkYXRlIjoiMjAyNi0xMi0wMiJ9
+! exit 0
+```
+
+### Kalendereintrag speichern
+
+`kalender` holt die .ics-Datei zu einer Termin-ID und speichert sie im
+Datenverzeichnis des Nutzers (`$XDG_DATA_HOME/blutspende-cli/termine`).
+Mit `--datei PFAD` lässt sich ein anderer Speicherort wählen.
+
+```ux-session
+$ blutspende kalender 436804
+< Kalendereintrag gespeichert:
+! exit 0
+```
+
+### Neue Termine beobachten
+
+`watch` merkt sich die zuletzt gesehenen Termin-IDs unter
+`$XDG_STATE_HOME/blutspende-cli` und meldet beim nächsten Aufruf nur neue
+Termine. Der erste Aufruf meldet alle Treffer.
+
+```ux-session
+$ blutspende watch 74072
+< 3 neue Termine seit dem letzten Aufruf
+< 02.12.2026 74235 Erlenbach
+< 03.12.2026 74388 Talheim
+< 23.12.2026 74078 Heilbronn-Kirchhausen
+! exit 0
+```
+
+### Suche im Landkreis
+
+Statt PLZ/Ort kann ein Landkreis per Name angegeben werden. Der Name wird
+über die Landkreisliste der Suchseite zur `county_id` aufgelöst (tippfehler-
+tolerant, z. B. „Zwickau“ → 14524).
+
+```ux-session
+$ blutspende suche --landkreis Zwickau
+< Landkreis Zwickau (14524)
+< 3 Termine im Landkreis Zwickau
+< 1) 24.11.2026, 11:00-13:00 Uhr: 08056 Zwickau, Plasmaspendezentrum Zwickau
+< 2) 25.11.2026, 15:00-18:30 Uhr: 08412 Werdau, Werdau, Stadthalle
+< 3) 26.11.2026, 11:00-13:00 Uhr: 08056 Zwickau, Plasmaspendezentrum Zwickau
 ! exit 0
 ```
 
 ## Lesende Routen
 
-Hier stehen alle Routen, die die Sitzungen gegen den Fake-Server brauchen. `path` wird ohne Querystring exakt verglichen; `query_contains` ist optional. Der Login ist ein POST, löst aber keine Buchung aus und gehört deshalb zu den lesenden Routen. Die Antwortdateien liegen relativ zum Repo.
+Alle Sitzungen kommen mit GET aus. Die RSS-Suche ist die Hauptquelle; die
+HTML-Suche liefert die Landkreisliste, die Detailseite die Adresse und den
+Reservierungslink, der Kalender-Endpunkt die .ics-Datei. Antworten sind
+gekürzte Live-Antworten vom 24.11.2026 ohne Personendaten.
 
 ```ux-routes
-[{"method":"POST","path":"/login","response":"tests/fixtures/ux/login_erfolg.html","status":200,"content_type":"text/html; charset=utf-8"},
- {"method":"GET","path":"/kurse","query_contains":"volleyball","response":"tests/fixtures/ux/kurse.html","status":200,"content_type":"text/html; charset=utf-8"},
- {"method":"GET","path":"/kurse/32304","response":"tests/fixtures/ux/kurs_32304.html","status":200,"content_type":"text/html; charset=utf-8"}]
+[{"method": "GET", "path": "/blutspendetermine/termine.rss", "query_contains": "term=74072", "response": "tests/fixtures/ux/rss_74072.xml", "status": 200, "content_type": "application/rss+xml; charset=utf-8"},
+ {"method": "GET", "path": "/blutspendetermine/termine.rss", "query_contains": "term=Heilbronn", "response": "tests/fixtures/ux/rss_heilbronn.xml", "status": 200, "content_type": "application/rss+xml; charset=utf-8"},
+ {"method": "GET", "path": "/blutspendetermine/termine.rss", "query_contains": "term=Erlenbach", "response": "tests/fixtures/ux/rss_erlenbach.xml", "status": 200, "content_type": "application/rss+xml; charset=utf-8"},
+ {"method": "GET", "path": "/blutspendetermine/termine.rss", "query_contains": "county_id=14524", "response": "tests/fixtures/ux/rss_zwickau.xml", "status": 200, "content_type": "application/rss+xml; charset=utf-8"},
+ {"method": "GET", "path": "/blutspendetermine/termine", "query_contains": "term=Zwickau", "response": "tests/fixtures/ux/landkreise.html", "status": 200, "content_type": "text/html; charset=utf-8"},
+ {"method": "GET", "path": "/blutspendetermine/termine/436804", "response": "tests/fixtures/ux/detail_436804.html", "status": 200, "content_type": "text/html; charset=utf-8"},
+ {"method": "GET", "path": "/blutspendetermine/termine/436804/ical.ics", "response": "tests/fixtures/ux/termin_436804.ics", "status": 200, "content_type": "text/calendar"}]
 ```
 
-## Formularschritte der schreibenden Aktion
+## Schreibende Aktion
 
-Die Liste enthält ALLE Requests in Reihenfolge, bis die Buchung endgültig bestätigt ist. `sends` nennt Feldnamen, die im Body vorkommen müssen; ein `*` am Ende erlaubt Präfix-Treffer. `before_confirm: true` ist nur für Schritte erlaubt, die vor der `[j/N]`-Frage laufen und nichts verbindlich auslösen, zum Beispiel das Öffnen des Formulars. `live: erkundet` heißt lesend auf der echten Seite gesehen, `live: synthetisch` heißt nachgebaut und als solches markiert.
-
-```ux-formsteps
-[{"id":"formular_oeffnen","method":"POST","path":"/buchen/32304","sends":["kurs_id"],"response":"tests/fixtures/ux/buchen_formular.html","before_confirm":true,"live":"erkundet"},
- {"id":"teilnehmerdaten","method":"POST","path":"/buchen/32304","sends":["vorname","nachname","email","statusgruppe"],"response":"tests/fixtures/ux/buchen_uebersicht.html","live":"synthetisch"},
- {"id":"verbindlich","method":"POST","path":"/buchen/32304","sends":["bestaetigungstoken"],"response":"tests/fixtures/ux/buchen_bestaetigt.html","final":true,"live":"synthetisch"}]
-```
-
-Der letzte Schritt trägt `"final": true`. Fehlt ein Schritt oder endet die Aktion nach dem ersten Request, meldet `ux_check.py` UX08 und `ux_session.py` bricht den Lauf ab. Beide Gates müssen grün sein, bevor der Build als fertig gilt.
+Keine. Das Tool reserviert nicht und sendet keine Formulare; der
+Reservierungslink wird nur angezeigt. Deshalb gibt es keine `ux-formsteps`,
+keine `credential_env` und keinen `login`-Befehl. `UX09` darf im vollen Gate
+als SKIP (read-only) enden.
