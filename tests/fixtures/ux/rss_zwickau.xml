@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>DRK-Blutspendetermine</title>
+    <description>Sie sehen Blutspendetermine vom 24.11.2026 bis zum 26.11.2026</description>
+    <link>https://www.drk-blutspende.de/blutspendetermine/termine</link>
+    <language>de-de</language>
+    <item>
+      <guid>https://www.drk-blutspende.de/blutspendetermine/termine/409610</guid>
+      <link>https://www.drk-blutspende.de/blutspendetermine/termine/409610</link>
+      <title>08056 Zwickau am 24.11.2026, 11:00 Uhr bis 13:00 Uhr</title>
+      <description>- Äußere Schneeberger Straße 100 (Glück-Auf-Center) - Plasmaspendezentrum Zwickau</description>
+    </item>
+    <item>
+      <guid>https://www.drk-blutspende.de/blutspendetermine/termine/420441</guid>
+      <link>https://www.drk-blutspende.de/blutspendetermine/termine/420441</link>
+      <title>08412 Werdau am 25.11.2026, 15:00 Uhr bis 18:30 Uhr</title>
+      <description>- Crimmitschauer Str. 7 - Werdau, Stadthalle</description>
+    </item>
+    <item>
+      <guid>https://www.drk-blutspende.de/blutspendetermine/termine/409624</guid>
+      <link>https://www.drk-blutspende.de/blutspendetermine/termine/409624</link>
+      <title>08056 Zwickau am 26.11.2026, 11:00 Uhr bis 13:00 Uhr</title>
+      <description>- Äußere Schneeberger Straße 100 (Glück-Auf-Center) - Plasmaspendezentrum Zwickau</description>
+    </item>
+  </channel>
+</rss>

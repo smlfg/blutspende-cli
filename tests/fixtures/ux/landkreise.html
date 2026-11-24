@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <title>Blutspendetermine</title>
+</head>
+<body>
+  <h1 class="text-uppercase mb-4">Blutspenden in Zwickau</h1>
+  <form class="simple_form edit_" id="edit_" action="/blutspendetermine/termine" accept-charset="UTF-8" method="get">
+    <input name="utf8" type="hidden" value="&#x2713;" />
+    <div class="form-floating string optional _term">
+      <input class="form-control string optional form-control-lg" placeholder="PLZ oder Ort eingeben" type="text" value="Zwickau" name="term" id="term" />
+      <label class="control-label string optional" for="term">PLZ / Ort</label>
+    </div>
+    <div class="form-floating select optional _radius">
+      <select class="form-select select optional" name="radius" id="radius">
+        <option value="">bitte wählen</option>
+        <option value="5">5</option>
+        <option value="10">10</option>
+        <option value="15">15</option>
+        <option value="25">25</option>
+        <option value="50">50</option>
+        <option value="75">75</option>
+      </select>
+      <label class="select optional" for="radius">Umkreis in km</label>
+    </div>
+    <div class="form-floating select optional _county_id">
+      <select class="form-select select optional" name="county_id" id="county_id">
+        <option value="">bitte wählen</option>
+        <option value="07131">Ahrweiler</option>
+        <option value="08425">Alb-Donau-Kreis</option>
+        <option value="11000">Berlin (Kreisfreie Stadt)</option>
+        <option value="08121">Heilbronn (Stadtkreis)</option>
+        <option value="08125">Heilbronn</option>
+        <option value="14524">Zwickau</option>
+      </select>
+      <label class="select optional" for="county_id"><span class='community-label'>oder Landkreis</span></label>
+    </div>
+    <div class="form-floating date optional _date_from">
+      <input class="form-control date optional w-100" value="" placeholder="TT.MM.JJJJ" type="date" name="date_from" id="date_from" />
+      <label class="control-label date optional" for="date_from">Zeitraum <span class='fromto-label ml-2'>von</span></label>
+    </div>
+    <div class="form-floating date optional _date_to">
+      <input class="form-control date optional w-100" value="" placeholder="TT.MM.JJJJ" type="date" name="date_to" id="date_to" />
+      <label class="control-label date optional" for="date_to"><span class='fromto-label'>bis</span></label>
+    </div>
+  </form>
+</body>
+</html>

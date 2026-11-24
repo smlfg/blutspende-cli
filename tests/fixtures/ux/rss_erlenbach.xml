@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>DRK-Blutspendetermine</title>
+    <description>Sie sehen Blutspendetermine vom 25.11.2026 bis zum 28.12.2026</description>
+    <link>https://www.drk-blutspende.de/blutspendetermine/termine</link>
+    <language>de-de</language>
+    <item>
+      <guid>https://www.drk-blutspende.de/blutspendetermine/termine/436399</guid>
+      <link>https://www.drk-blutspende.de/blutspendetermine/termine/436399</link>
+      <title>61352 Bad Homburg / Ober-Erlenbach am 25.11.2026, 15:30 Uhr bis 19:45 Uhr</title>
+      <description>- Josef-Baumann-Str.15 - Erlenbachhalle</description>
+    </item>
+    <item>
+      <guid>https://www.drk-blutspende.de/blutspendetermine/termine/436804</guid>
+      <link>https://www.drk-blutspende.de/blutspendetermine/termine/436804</link>
+      <title>74235 Erlenbach am 02.12.2026, 14:00 Uhr bis 19:00 Uhr</title>
+      <description>- Talstraße 21 - Sulmtalhalle, Kultursaal</description>
+    </item>
+    <item>
+      <guid>https://www.drk-blutspende.de/blutspendetermine/termine/436092</guid>
+      <link>https://www.drk-blutspende.de/blutspendetermine/termine/436092</link>
+      <title>97714 OERLENBACH am 28.12.2026, 16:30 Uhr bis 20:00 Uhr</title>
+      <description>- Schulstr. 10 - Grund- und Mittelschule</description>
+    </item>
+  </channel>
+</rss>
