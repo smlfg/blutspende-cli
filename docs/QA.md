@@ -2,7 +2,7 @@
 
 - Datum: 25.11.2026
 - Version: `blutspende 0.1.0`
-- Commit: `c1612f5` (HEAD, identisch mit dem per `pipx` installierten Commit)
+- Commit: `c1612f5` (ursprünglicher QA-Lauf; Fixes bis `08a068e`)
 - Installation: `scratch/pipx` (Python 3.14.7), Protokoll `scratch/qa/pipx-install.log`
 - Live-Quelle: `https://www.drk-blutspende.de`, nur lesende GETs
 - Fake-Server: `tests/harness/fake_server.py` mit den `ux-routes` aus `docs/UX.md`
@@ -11,7 +11,8 @@
 
 ## Ergebnis
 
-**51 OK / 57 Prüfungen; 6 FAIL** (offene FAILs siehe unten).
+**57 OK / 57 Prüfungen; 0 FAIL** (Nachprüfung 25.11.2026 nach den Fixes,
+siehe unten).
 
 ## Prüfungen
 
@@ -68,38 +69,32 @@
 | JSON-Fehler im TTY | `blutspende --json zeige Erlenbach` | genau ein JSON-Objekt | OK | valides JSON, Exit 2 |
 | Strg+C | `blutspende suche 74072` + `SIGINT` | Exit 130, kein Traceback | OK | `Abgebrochen.`, Exit 130 |
 | EOF am Prompt | `blutspende zeige Erlenbach`, Eingabe `x` + EOF | Exit 2, kein Traceback | OK | `Eingabe abgebrochen – ID angeben oder --erster verwenden.` |
-| Watch über Tageswechsel | `BLUTSPENDE_HEUTE=2026-11-24 blutspende watch 74072`, dann `2026-11-25` | zweiter Tag: 0 neu | FAIL | zweiter Tag meldet erneut `3 neue Termine` (State-Key enthält `von`) |
-| `zeige` unbekannte ID | `blutspende --json zeige 123456789` | Exit 1, Termin nicht gefunden | FAIL | `{"ok": true, "termin": {"datum": null, ...}}`, Exit 0 |
-| `kalender` unbekannte ID | `blutspende --json kalender 123456789 --datei .../bad_123456789.ics` | Exit 1/3, keine Datei | FAIL | `{"ok": true, "datei": ...}`, Exit 0; Datei beginnt mit `<!DOCTYPE html>` |
-| `zeige` mehrdeutig ohne TTY | `blutspende --json zeige Erlenbach` | Exit 2 mit Kandidatenliste im JSON-Fehlerobjekt | FAIL | Fehlerobjekt nur mit `code`/`art`/`nachricht`, keine Kandidaten |
-| Detail ohne Hausnummer | `blutspende zeige 436838` | Straße `In den Hofwiesen` | FAIL | Ausgabe: `Schloßberghalle`, dann direkt Uhrzeit; Straße fehlt |
-| Cache-Verzeichnisrechte | `stat -c '%a' $XDG_CACHE_HOME/blutspende-cli` | `700` | FAIL | `755` (nur Unterordner `antworten` ist `700`) |
+| Watch über Tageswechsel | `BLUTSPENDE_HEUTE=2026-11-24 blutspende watch 74072`, dann `2026-11-25` | zweiter Tag: 0 neu | OK (nach Fix e6437cd) | zweiter Tag `"anzahl_neu": 0`, Exit 0 |
+| `zeige` unbekannte ID | `blutspende --json zeige 123456789` | Exit 1, Termin nicht gefunden | OK (nach Fix 4189790) | `{"ok": false, "fehler": {"code": 1, "art": "nicht_gefunden", ...}}`, Exit 1 |
+| `kalender` unbekannte ID | `blutspende --json kalender 123456789 --datei .../bad_123456789.ics` | Exit 1/3, keine Datei | OK (nach Fix 5dbc021) | Exit 1, `nicht_gefunden`; keine Datei angelegt |
+| `zeige` mehrdeutig ohne TTY | `blutspende --json zeige Erlenbach` | Exit 2 mit Kandidatenliste im JSON-Fehlerobjekt | OK (nach Fix 5d78614) | Exit 2; `"kandidaten"` mit IDs `436399`, `436804`, `436092` |
+| Detail ohne Hausnummer | `blutspende zeige 436838` | Straße `In den Hofwiesen` | OK (nach Fix 75357c2) | Ausgabe enthält `Schloßberghalle` und `In den Hofwiesen` |
+| Cache-Verzeichnisrechte | `stat -c '%a' $XDG_CACHE_HOME/blutspende-cli` | `700` | OK (nach Fix 08a068e) | `700`; auch `.../antworten` ist `700` |
 
-## Offene FAILs
+## Behobene FAILs (Nachprüfung 25.11.2026)
+
+Alle sechs FAILs wurden behoben, live erneut ausgeführt und durch Unit-Tests
+abgesichert.
 
 1. **`watch` über Tageswechsel**: Der Zustandsschlüssel enthält das implizite
-   `von` (heute). Dadurch meldet `watch` am nächsten Tag alle bereits gesehenen
-   Termine erneut als neu. Beleg: gleicher Befehl mit `BLUTSPENDE_HEUTE`
-   24.11. und 25.11. liefert beide Male `3 neue Termine`; die State-Datei
-   enthält zwei Schlüssel mit demselben Termin-IDs-Satz.
-2. **`zeige` unbekannte ID**: Die Detailseite antwortet mit 302 auf die Suche,
-   der Client folgt dem Redirect und liefert ein leeres Erfolgsobjekt mit
-   Exit 0 statt „Termin nicht gefunden“ (Exit 1). Beleg:
-   `blutspende --json zeige 123456789` -> `"ok": true`, `"datum": null`.
-3. **`kalender` unbekannte ID**: Der iCal-Endpunkt antwortet ebenfalls mit
-   einem Redirect auf die Suchseite; der Client speichert die HTML-Seite als
-   `.ics` und meldet Erfolg. Beleg: `bad_123456789.ics` beginnt mit
-   `<!DOCTYPE html>`, Exit 0.
-4. **`zeige` mehrdeutig ohne TTY**: `INTERFACE.md` verlangt bei mehreren
-   Treffern ohne TTY eine Kandidatenliste im JSON-Fehlerobjekt. Die Ausgabe
-   enthält nur `code`, `art`, `nachricht`; die Kandidaten fehlen.
-5. **Detailseite ohne Hausnummer**: Bei Adressen ohne Ziffer in der Straße
-   (`In den Hofwiesen`) wird die Straße nicht erkannt und in der Detailansicht
-   weggelassen. Beleg: `blutspende zeige 436838` zeigt `Schloßberghalle` und
-   direkt die Uhrzeit.
-6. **Cache-Verzeichnisrechte**: `INTERFACE.md` fordert für
-   `$XDG_CACHE_HOME/blutspende-cli/` das Recht `0700`. Angelegt wird `0755`;
-   nur der Unterordner `antworten` ist `0700`.
+   `von` (heute) nicht mehr; ein explizites `--von` bleibt Teil des Schlüssels.
+   Nachprüfung: 24.11. `3 neue Termine`, 25.11. `0 neue Termine` (e6437cd).
+2. **`zeige` unbekannte ID**: Ein Redirect der Detailseite auf die Suche wird
+   als „Termin nicht gefunden“ (Exit 1) erkannt (4189790).
+3. **`kalender` unbekannte ID**: Der iCal-Endpunkt akzeptiert nur echte
+   Kalenderdaten (`BEGIN:VCALENDAR`) und keine HTML-Seite; es wird keine Datei
+   angelegt (5dbc021).
+4. **`zeige` mehrdeutig ohne TTY**: Das JSON-Fehlerobjekt enthält jetzt
+   `"kandidaten"` mit den vollständigen Treffern (5d78614).
+5. **Detailseite ohne Hausnummer**: Adresszeilen werden positionsbasiert
+   gelesen; `In den Hofwiesen` erscheint in der Detailansicht (75357c2).
+6. **Cache-Verzeichnisrechte**: `$XDG_CACHE_HOME/blutspende-cli/` wird mit
+   `0700` angelegt (08a068e).
 
 ## Nicht als FAIL gewertet
 
