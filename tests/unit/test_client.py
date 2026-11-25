@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 from blutspende_cli.client import DEFAULT_BASE_URL, Antwort, Client, basis_url
+from blutspende_cli.config import cache_dir
 from blutspende_cli.errors import NotFoundError, SourceError
 
 FIXTURES = Path(__file__).resolve().parents[1] / "fixtures" / "ux"
@@ -134,6 +135,33 @@ def test_ical_erkennt_html_redirect_als_nicht_gefunden(monkeypatch):
     with pytest.raises(NotFoundError):
         client.ical(123456789)
     client.close()
+
+
+def test_cache_verzeichnis_ist_0700(tmp_path, monkeypatch):
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path / "cache"))
+
+    class AntwortStub:
+        status_code = 200
+        content = b"hallo"
+        encoding = "utf-8"
+        url = f"{BASE}/x"
+        headers = {"content-type": "text/plain"}
+
+    class HttpStub:
+        def get(self, url):
+            return AntwortStub()
+
+        def close(self):
+            pass
+
+    client = Client(base_url=BASE)
+    client._http = HttpStub()
+    assert client.get("/x") == "hallo"
+    client.close()
+    root = cache_dir()
+    assert oct(root.stat().st_mode & 0o777) == oct(0o700)
+    assert oct((root / "antworten").stat().st_mode & 0o777) == oct(0o700)
 
 
 def test_ical_liefert_nur_kalenderdaten(monkeypatch):

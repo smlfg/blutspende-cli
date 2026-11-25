@@ -16,7 +16,7 @@ from urllib.parse import urlencode, urlsplit
 import httpx
 
 from . import __version__
-from .config import cache_dir
+from .config import cache_dir, ensure_cache_dir
 from .errors import NotFoundError, SourceError, UsageError
 from .parsers import (
     Termin,
@@ -105,6 +105,7 @@ class Client:
     def _cache_write(self, url: str, antwort: Antwort) -> None:
         path = self._cache_file(url)
         try:
+            ensure_cache_dir()
             path.parent.mkdir(parents=True, exist_ok=True)
             os.chmod(path.parent, 0o700)
             tmp = path.with_suffix(".tmp")

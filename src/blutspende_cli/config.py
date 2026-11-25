@@ -52,6 +52,12 @@ def _ensure_dir(path: Path, mode: int = 0o700) -> None:
         pass
 
 
+def ensure_cache_dir() -> Path:
+    path = cache_dir()
+    _ensure_dir(path, 0o700)
+    return path
+
+
 def _atomic_write(path: Path, text: str, mode: int) -> None:
     _ensure_dir(path.parent)
     handle, raw = tempfile.mkstemp(dir=str(path.parent), prefix=".tmp-")
