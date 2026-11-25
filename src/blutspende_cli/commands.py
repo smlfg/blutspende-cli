@@ -347,10 +347,15 @@ def _finde_termin(
         return client, client.detail(kandidaten[0].id)
     if getattr(args, "erster", False):
         return client, client.detail(kandidaten[0].id)
+    nachricht = "Mehrere Termine gefunden – ID angeben oder --erster verwenden."
+    kandidaten_json = [termin.als_json() for termin in kandidaten]
     if ausgabe.json_mode:
-        raise UsageError(
-            "Mehrere Termine gefunden – ID angeben oder --erster verwenden."
-        )
+        raise UsageError(nachricht, kandidaten=kandidaten_json)
+    if not sys.stdin.isatty():
+        print("Mehrere Termine gefunden:")
+        for nummer, termin in enumerate(kandidaten, start=1):
+            print(_kandidat_zeile(termin, nummer))
+        raise UsageError(nachricht, kandidaten=kandidaten_json)
     auswahl = _kandidaten_auswahl(kandidaten)
     return client, client.detail(auswahl.id)
 

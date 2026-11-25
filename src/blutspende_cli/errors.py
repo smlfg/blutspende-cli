@@ -9,9 +9,16 @@ class BlutspendeError(Exception):
     code = 1
     art = "fehler"
 
-    def __init__(self, nachricht: str, *, code: int | None = None) -> None:
+    def __init__(
+        self,
+        nachricht: str,
+        *,
+        code: int | None = None,
+        kandidaten: list[dict] | None = None,
+    ) -> None:
         super().__init__(nachricht)
         self.nachricht = nachricht
+        self.kandidaten = kandidaten
         if code is not None:
             self.code = code
 

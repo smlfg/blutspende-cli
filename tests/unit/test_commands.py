@@ -134,10 +134,26 @@ def test_zeige_mehrdeutig_ohne_tty(umgebung, capsys, monkeypatch):
 
     monkeypatch.setattr("sys.stdin.isatty", lambda: False)
     args = argparse.Namespace(ziel="Erlenbach", umkreis=None, erster=False)
-    with pytest.raises(UsageError):
+    with pytest.raises(UsageError) as info:
         commands.cmd_zeige(args, Ausgabe(False))
     aus = capsys.readouterr().out
     assert "Mehrere Termine gefunden:" in aus
+    assert [k["id"] for k in info.value.kandidaten] == [436399, 436804, 436092]
+
+
+def test_zeige_mehrdeutig_json_enthaelt_kandidaten(umgebung, capsys):
+    from blutspende_cli.cli import main
+
+    code = main(["--json", "zeige", "Erlenbach"])
+    daten = json.loads(capsys.readouterr().out)
+    assert code == 2
+    assert daten["ok"] is False
+    assert daten["fehler"]["code"] == 2
+    assert [k["id"] for k in daten["fehler"]["kandidaten"]] == [
+        436399,
+        436804,
+        436092,
+    ]
 
 
 def test_kalender_speichert_datei(umgebung, capsys):

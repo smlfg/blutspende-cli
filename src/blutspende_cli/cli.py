@@ -190,19 +190,14 @@ def build_parser() -> Parser:
 
 def _fehler(exc: BlutspendeError, json_mode: bool) -> int:
     if json_mode:
-        print(
-            json.dumps(
-                {
-                    "ok": False,
-                    "fehler": {
-                        "code": exc.code,
-                        "art": exc.art,
-                        "nachricht": exc.nachricht,
-                    },
-                },
-                ensure_ascii=False,
-            )
-        )
+        fehler: dict[str, Any] = {
+            "code": exc.code,
+            "art": exc.art,
+            "nachricht": exc.nachricht,
+        }
+        if exc.kandidaten is not None:
+            fehler["kandidaten"] = exc.kandidaten
+        print(json.dumps({"ok": False, "fehler": fehler}, ensure_ascii=False))
     else:
         print(f"Fehler: {exc.nachricht}", file=sys.stderr)
     return exc.code
