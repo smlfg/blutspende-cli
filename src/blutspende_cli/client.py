@@ -5,7 +5,9 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import time
+from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 from typing import Any
@@ -29,6 +31,13 @@ USER_AGENT = f"blutspende-cli/{__version__} (+https://github.com/smlfg/blutspend
 CACHE_TTL = 600
 MIN_INTERVAL = 1.0
 TIMEOUT = 15.0
+
+
+@dataclass(frozen=True)
+class Antwort:
+    text: str
+    final_url: str
+    content_type: str
 
 
 def basis_url() -> str:
@@ -68,7 +77,7 @@ class Client:
         digest = hashlib.sha256(url.encode("utf-8")).hexdigest()
         return cache_dir() / "antworten" / f"{digest}.json"
 
-    def _cache_read(self, url: str) -> str | None:
+    def _cache_read(self, url: str) -> Antwort | None:
         path = self._cache_file(url)
         try:
             stat = path.stat()
@@ -80,18 +89,35 @@ class Client:
             data = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
             return None
-        if data.get("url") != url or not isinstance(data.get("text"), str):
+        if (
+            data.get("url") != url
+            or not isinstance(data.get("text"), str)
+            or not isinstance(data.get("final_url"), str)
+        ):
             return None
-        return data["text"]
+        content_type = data.get("content_type")
+        return Antwort(
+            text=data["text"],
+            final_url=data["final_url"],
+            content_type=content_type if isinstance(content_type, str) else "",
+        )
 
-    def _cache_write(self, url: str, text: str) -> None:
+    def _cache_write(self, url: str, antwort: Antwort) -> None:
         path = self._cache_file(url)
         try:
             path.parent.mkdir(parents=True, exist_ok=True)
             os.chmod(path.parent, 0o700)
             tmp = path.with_suffix(".tmp")
             tmp.write_text(
-                json.dumps({"url": url, "text": text}, ensure_ascii=False),
+                json.dumps(
+                    {
+                        "url": url,
+                        "text": antwort.text,
+                        "final_url": antwort.final_url,
+                        "content_type": antwort.content_type,
+                    },
+                    ensure_ascii=False,
+                ),
                 encoding="utf-8",
             )
             os.chmod(tmp, 0o600)
@@ -107,6 +133,11 @@ class Client:
         self._last_request = time.monotonic()
 
     def get(self, path: str, params: dict[str, Any] | None = None) -> str:
+        return self.get_antwort(path, params).text
+
+    def get_antwort(
+        self, path: str, params: dict[str, Any] | None = None
+    ) -> Antwort:
         query = {
             key: value
             for key, value in (params or {}).items()
@@ -137,8 +168,13 @@ class Client:
             )
         encoding = response.encoding or "utf-8"
         text = response.content.decode(encoding, "replace")
-        self._cache_write(url, text)
-        return text
+        antwort = Antwort(
+            text=text,
+            final_url=str(response.url),
+            content_type=response.headers.get("content-type", ""),
+        )
+        self._cache_write(url, antwort)
+        return antwort
 
     def suche_rss(
         self,
@@ -176,21 +212,32 @@ class Client:
 
     def detail(self, termin_id: int) -> dict:
         try:
-            text = self.get(f"/blutspendetermine/termine/{termin_id}")
+            antwort = self.get_antwort(f"/blutspendetermine/termine/{termin_id}")
         except SourceError as exc:
             if exc.status == 404:
                 raise NotFoundError(
                     f"Termin {termin_id} nicht gefunden – ID prüfen."
                 ) from exc
             raise
-        return parse_detail(text, termin_id, self.base_url)
+        pfad = urlsplit(antwort.final_url).path.rstrip("/")
+        if not re.search(rf"/termine/{termin_id}$", pfad):
+            raise NotFoundError(f"Termin {termin_id} nicht gefunden – ID prüfen.")
+        return parse_detail(antwort.text, termin_id, self.base_url)
 
     def ical(self, termin_id: int) -> str:
         try:
-            return self.get(f"/blutspendetermine/termine/{termin_id}/ical.ics")
+            antwort = self.get_antwort(
+                f"/blutspendetermine/termine/{termin_id}/ical.ics"
+            )
         except SourceError as exc:
             if exc.status == 404:
                 raise NotFoundError(
                     f"Termin {termin_id} nicht gefunden – ID prüfen."
                 ) from exc
             raise
+        pfad = urlsplit(antwort.final_url).path.rstrip("/")
+        if not re.search(rf"/termine/{termin_id}/ical\.ics$", pfad):
+            raise NotFoundError(f"Termin {termin_id} nicht gefunden – ID prüfen.")
+        if not antwort.text.lstrip("\ufeff \t\r\n").startswith("BEGIN:VCALENDAR"):
+            raise NotFoundError(f"Termin {termin_id} nicht gefunden – ID prüfen.")
+        return antwort.text

@@ -5,8 +5,8 @@ from pathlib import Path
 
 import pytest
 
-from blutspende_cli.client import DEFAULT_BASE_URL, Client, basis_url
-from blutspende_cli.errors import SourceError
+from blutspende_cli.client import DEFAULT_BASE_URL, Antwort, Client, basis_url
+from blutspende_cli.errors import NotFoundError, SourceError
 
 FIXTURES = Path(__file__).resolve().parents[1] / "fixtures" / "ux"
 BASE = "https://www.drk-blutspende.de"
@@ -86,3 +86,36 @@ def test_suche_rss_landkreis_ohne_term(monkeypatch):
     assert aufrufe[0]["county_id"] == "14524"
     assert aufrufe[0]["term"] is None
     assert aufrufe[0]["radius"] is None
+
+
+def test_detail_erkennt_redirect_auf_suche_als_nicht_gefunden(monkeypatch):
+    def fake_antwort(self, path, params=None):
+        return Antwort(
+            text="<html><body>Suche</body></html>",
+            final_url=f"{BASE}/blutspendetermine/termine/suche",
+            content_type="text/html; charset=utf-8",
+        )
+
+    monkeypatch.setattr(Client, "get_antwort", fake_antwort)
+    client = Client(base_url=BASE)
+    with pytest.raises(NotFoundError):
+        client.detail(123456789)
+    client.close()
+
+
+def test_detail_parst_gueltige_seite(monkeypatch):
+    html = (FIXTURES / "detail_436804.html").read_text(encoding="utf-8")
+
+    def fake_antwort(self, path, params=None):
+        return Antwort(
+            text=html,
+            final_url=f"{BASE}/blutspendetermine/termine/436804",
+            content_type="text/html; charset=utf-8",
+        )
+
+    monkeypatch.setattr(Client, "get_antwort", fake_antwort)
+    client = Client(base_url=BASE)
+    detail = client.detail(436804)
+    client.close()
+    assert detail["id"] == 436804
+    assert detail["ort"] == "Erlenbach"
