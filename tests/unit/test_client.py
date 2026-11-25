@@ -119,3 +119,35 @@ def test_detail_parst_gueltige_seite(monkeypatch):
     client.close()
     assert detail["id"] == 436804
     assert detail["ort"] == "Erlenbach"
+
+
+def test_ical_erkennt_html_redirect_als_nicht_gefunden(monkeypatch):
+    def fake_antwort(self, path, params=None):
+        return Antwort(
+            text="<!DOCTYPE html><html><body>Suche</body></html>",
+            final_url=f"{BASE}/blutspendetermine/termine/suche",
+            content_type="text/html; charset=utf-8",
+        )
+
+    monkeypatch.setattr(Client, "get_antwort", fake_antwort)
+    client = Client(base_url=BASE)
+    with pytest.raises(NotFoundError):
+        client.ical(123456789)
+    client.close()
+
+
+def test_ical_liefert_nur_kalenderdaten(monkeypatch):
+    ics = (FIXTURES / "termin_436804.ics").read_text(encoding="utf-8")
+
+    def fake_antwort(self, path, params=None):
+        return Antwort(
+            text=ics,
+            final_url=f"{BASE}/blutspendetermine/termine/436804/ical.ics",
+            content_type="text/calendar",
+        )
+
+    monkeypatch.setattr(Client, "get_antwort", fake_antwort)
+    client = Client(base_url=BASE)
+    inhalt = client.ical(436804)
+    client.close()
+    assert inhalt.startswith("BEGIN:VCALENDAR")

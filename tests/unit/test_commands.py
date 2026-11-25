@@ -151,6 +151,25 @@ def test_kalender_speichert_datei(umgebung, capsys):
     assert "UID:436804" in datei.read_text(encoding="utf-8")
 
 
+def test_kalender_unbekannte_id_schreibt_keine_datei(umgebung, monkeypatch):
+    from blutspende_cli.errors import NotFoundError
+
+    class Fehlt:
+        def close(self):
+            pass
+
+        def ical(self, termin_id):
+            raise NotFoundError(f"Termin {termin_id} nicht gefunden – ID prüfen.")
+
+    monkeypatch.setattr(commands, "Client", lambda: Fehlt())
+    ziel = umgebung / "bad_123456789.ics"
+    with pytest.raises(NotFoundError):
+        commands.cmd_kalender(
+            argparse.Namespace(termin_id="123456789", datei=str(ziel)), Ausgabe(True)
+        )
+    assert not ziel.exists()
+
+
 def test_watch_meldet_nur_neue(umgebung, capsys):
     args = _suche_args()
     commands.cmd_watch(args, Ausgabe(False))
