@@ -394,18 +394,17 @@ def cmd_kalender(args: Any, ausgabe: Ausgabe) -> int:
     return 0
 
 
-def _watch_key(ergebnis: SuchErgebnis) -> str:
-    return json.dumps(
-        {
-            "term": ergebnis.term,
-            "landkreis_id": ergebnis.landkreis_id,
-            "umkreis": ergebnis.umkreis,
-            "von": ergebnis.von.isoformat(),
-            "bis": ergebnis.bis.isoformat() if ergebnis.bis else None,
-        },
-        sort_keys=True,
-        ensure_ascii=False,
-    )
+def _watch_key(ergebnis: SuchErgebnis, args: Any) -> str:
+    daten: dict[str, Any] = {
+        "term": ergebnis.term,
+        "landkreis_id": ergebnis.landkreis_id,
+        "umkreis": ergebnis.umkreis,
+        "bis": ergebnis.bis.isoformat() if ergebnis.bis else None,
+    }
+    roh_von = getattr(args, "von", None)
+    if roh_von not in (None, ""):
+        daten["von"] = ergebnis.von.isoformat()
+    return json.dumps(daten, sort_keys=True, ensure_ascii=False)
 
 
 def cmd_watch(args: Any, ausgabe: Ausgabe) -> int:
@@ -413,7 +412,7 @@ def cmd_watch(args: Any, ausgabe: Ausgabe) -> int:
         args, standard_umkreis=10, standard_limit=20
     )
     client.close()
-    key = _watch_key(ergebnis)
+    key = _watch_key(ergebnis, args)
     zustand = load_watch()
     abfragen = zustand.get("abfragen")
     if not isinstance(abfragen, dict):

@@ -164,6 +164,18 @@ def test_watch_meldet_nur_neue(umgebung, capsys):
     assert oct(state.stat().st_mode & 0o777) == oct(0o600)
 
 
+def test_watch_ueber_tageswechsel_meldet_keine_alten(umgebung, capsys, monkeypatch):
+    args = _suche_args()
+    commands.cmd_watch(args, Ausgabe(True))
+    capsys.readouterr()
+    monkeypatch.setenv("BLUTSPENDE_HEUTE", "2026-11-25")
+    code = commands.cmd_watch(args, Ausgabe(True))
+    daten = json.loads(capsys.readouterr().out)
+    assert code == 0
+    assert daten["anzahl_neu"] == 0
+    assert daten["termine"] == []
+
+
 def test_config_ort_zeigen_loeschen(umgebung, capsys):
     ort = argparse.Namespace(wert="74072", umkreis=20)
     commands.cmd_config_ort(ort, Ausgabe(False))
