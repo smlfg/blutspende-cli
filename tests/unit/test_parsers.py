@@ -55,6 +55,26 @@ def test_landkreise_und_tippfehler():
     assert finde_landkreis(landkreise, "gibtsnicht") is None
 
 
+def test_detail_strasse_ohne_hausnummer():
+    html = """
+    <html><body>
+      <h1>Blutspende in Talheim</h1>
+      <div class="datum"><p>03.12.2026</p></div>
+      <div class="adresse">
+        <strong>Talheim 74388</strong><br />
+        Schloßberghalle<br />
+        In den Hofwiesen<br />
+        <strong>14:30 - 19:30 Uhr</strong><br />
+        <strong>Nur mit Terminreservierung!</strong>
+      </div>
+    </body></html>
+    """
+    detail = parse_detail(html, 436838, BASE)
+    assert detail["lokal"] == "Schloßberghalle"
+    assert detail["strasse"] == "In den Hofwiesen"
+    assert (detail["von"], detail["bis"]) == ("14:30", "19:30")
+
+
 def test_detail_parst_adresse_reservierung_und_hinweis():
     detail = parse_detail(_text("detail_436804.html"), 436804, BASE)
     assert detail["titel"] == "Blutspende in Erlenbach"

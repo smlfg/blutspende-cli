@@ -217,12 +217,14 @@ def parse_detail(html: str, termin_id: int, base_url: str) -> dict:
             bis = zeit_match.group("bis")
             continue
         rest.append(zeile)
-    for index, zeile in enumerate(rest):
-        if re.search(r"\d", zeile):
-            strasse = rest.pop(index)
-            break
-    if rest:
+    if len(rest) >= 2:
         lokal = rest[0]
+        strasse = " ".join(rest[1:])
+    elif rest:
+        if re.search(r"\d", rest[0]):
+            strasse = rest[0]
+        else:
+            lokal = rest[0]
 
     reservierung = soup.select_one("#make_reservation a.reservation")
     if not isinstance(reservierung, Tag):
